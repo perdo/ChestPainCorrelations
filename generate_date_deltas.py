@@ -26,28 +26,21 @@ def choose_best_cycle(data_file):
     cycle_errors = {}
     for line in input_file:
         counts.append(int(line['Count']))
-    print counts
-    #for k in range(1, 31):
-    for k in range(1, 3):
+    #print counts
+    for k in range(1, 31):
+    #for k in range(1, 3):
         w = []
         start_error = {}
         error = 0
-        for start in range(0, k):  
-            for i in range(start, len(counts) - k + 1, k):
-                w.append(sum(counts[i:i+k])/k) 
-                print "countsB" 
-                print counts[i:i+k] 
-                print "countsE"
-            error = sum([abs(w[pos] - w[pos-1]) for pos in range(1, len(w))]) 
-            error = sum([abs(w[pos] - w[pos-1]) for pos in range(1, len(w))]) 
-            print "W"
-            print w
-            print "WE"
-            #print [(w[pos],w[pos-k]) for pos in range(k + start, len(w)-k)]
-            #print [pos for pos in range(k + start, len(w)-k)]
+        for start in range(0, k): #issue, strips off anything that doesn't fit on left side but not right side maybe I made it other side issue? 
+            error_terms = [1.0 * abs(counts[pos] - counts[pos-k]) for pos in range(k+start, len(counts))]
+            #error_terms = [1.0 * abs(counts[pos] - counts[pos-k])/k for pos in range(k+start, len(counts))]
+            error = 1.0 * sum(error_terms) / len(error_terms)
+            #print [abs(counts[pos] - counts[pos-k])/k for pos in range(k+start, len(counts))]
+            #print [(counts[pos], counts[pos-k]) for pos in range(k+start, len(counts))] 
             start_error[start] = error
         best_start_key = min(start_error.iteritems(), key=operator.itemgetter(1))[0]
-        print sorted(start_error.items(), key=lambda x: x[1])
+        #print sorted(start_error.items(), key=lambda x: x[1])
         cycle_errors[(k,best_start_key)] = start_error[best_start_key]
     print sorted(cycle_errors.items(), key=lambda x: x[1])
     #print sorted(cycle_errors.items())
