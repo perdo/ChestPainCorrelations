@@ -33,14 +33,17 @@ def choose_best_cycle(data_file):
         for start in range(0, k): #issue, strips off anything that doesn't fit on left side but not right side maybe I made it other side issue? 
             left_over_values = (len(counts)-start) % k
             error_terms = [1.0 * abs(counts[pos] - counts[pos-k]) for pos in range(k+start, len(counts)-left_over_values)]
-            #error_terms = [1.0 * abs(counts[pos] - counts[pos-k]) for pos in range(k+start, len(counts))]
+            #error_terms = [1.0 * sum([abs(counts[sub_pos] - counts[sub_pos-k]) for sub_pos in range(pos, pos+k)])/k for pos in range(k+start, len(counts) - k, k)]
+            #this averages error over k group and then averages that again with main
             error = 1.0 * sum(error_terms) / len(error_terms)
             start_error[start] = error
         best_start_key = min(start_error.iteritems(), key=operator.itemgetter(1))[0]
         #print sorted(start_error.items(), key=lambda x: x[1])
         cycle_errors[(k,best_start_key)] = start_error[best_start_key]
-    print sorted(cycle_errors.items(), key=lambda x: x[1])[:5]
-    return sorted(cycle_errors.items(), key=lambda x: x[1])[:5]
+    print sorted(cycle_errors.items(), key=lambda x: x[1])
+    #print sorted(cycle_errors.items(), key=lambda x: x[1])[:5]
+    return sorted(cycle_errors.items(), key=lambda x: x[1])
+    #return sorted(cycle_errors.items(), key=lambda x: x[1])[:5]
     #print sorted(cycle_errors.items())
 
 
