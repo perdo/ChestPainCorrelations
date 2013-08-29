@@ -1,3 +1,4 @@
+from collections import defaultdict
 import datetime
 import csv
 import sys
@@ -12,16 +13,16 @@ def output_form_single(data_file):
     input_file = csv.DictReader(open(data_file))
 
     for line in input_file:
-        counts_male.append(int(line['Count Male']))
-        counts_fem.append(int(line['Count Female']))
+        counts_male.append(int(line['Patient Count Male']))
+        counts_fem.append(int(line['Patient Count Female']))
     
     name = 'output_test_male.csv'
     writer = csv.writer(open(name, 'wt'))
     for i in range(0, int(math.ceil(len(counts_male))/2.0) + 1):
         writer.writerow([counts_male[j] for j in range(i, len(counts_male) - i)])
         #print [counts_male[j] for j in range(i, len(counts_fem) - i)]
-    name2 = 'output_test_female.csv'
-    writer = csv.writer(open(name2, 'wt'))
+    name = 'output_test_female.csv'
+    writer = csv.writer(open(name, 'wt'))
     for i in range(0, int(math.ceil(len(counts_male))/2.0) + 1):
         writer.writerow([counts_fem[j] for j in range(i, len(counts_fem) - i)])
         #print [counts_fem[j] for j in range(i, len(counts_fem) - i)]
@@ -31,22 +32,33 @@ def output_form_regions(regions):
         counts = []
         counts_fem = []
         counts_male = []
+        counts_ages = defaultdict(list)
         input_file = csv.DictReader(open("Data%s.csv" %(region,)))
 
         for line in input_file:
-            counts_male.append(int(line['Count Male']))
-            counts_fem.append(int(line['Count Female']))
+            for entry in line.keys():
+                if 'Patient Count Ages' in entry:
+                    counts_ages[entry].append(int(line[entry]))
+            counts_male.append(int(line['Patient Count Male']))
+            counts_fem.append(int(line['Patient Count Female']))
         
         name = "output_%s_male.csv" %(region,)
         writer = csv.writer(open(name, 'wt'))
         for i in range(0, int(math.ceil(len(counts_male))/2.0) + 1):
-            writer.writerow([counts_male[j] for j in range(i, len(counts_male) - i)])
-            #print [counts_male[j] for j in range(i, len(counts_fem) - i)]
-        name2 = "output_%s_female.csv" %(region,)
-        writer = csv.writer(open(name2, 'wt'))
+            writer.writerow([counts_male[j] for j in range(i, len(counts_male) - i)]) # prints correct portion of data for auto regression
+        name = "output_%s_female.csv" %(region,)
+        writer = csv.writer(open(name, 'wt'))
         for i in range(0, int(math.ceil(len(counts_male))/2.0) + 1):
-            writer.writerow([counts_fem[j] for j in range(i, len(counts_fem) - i)])
-            #print [counts_fem[j] for j in range(i, len(counts_fem) - i)]
+            writer.writerow([counts_fem[j] for j in range(i, len(counts_fem) - i)]) 
+        for entry in counts_ages.keys():
+            if len(counts_ages[entry]) == 0: # No need for extra files if the data is empty. Maybe threshold this to like 10?
+                continue
+            name = "output_%s_%s.csv" %(region, entry)
+            writer = csv.writer(open(name, 'wt'))
+            for i in range(0, int(math.ceil(len(counts_ages[entry]))/2.0) + 1):
+                writer.writerow([counts_ages[entry][j] for j in range(i, len(counts_ages[entry]) - i)])
+
+
                     
 
 def main():
