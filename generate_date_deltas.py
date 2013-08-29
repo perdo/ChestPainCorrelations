@@ -7,13 +7,16 @@ import operator
 def generate_delta_plot(data_file, day_length=1, start=0):
     input_file = csv.DictReader(open(data_file))
     counts = []
+    counts_fem = []
     deltas = []
     for line in input_file:
         counts.append(int(line['Count']))
+        counts_fem.append(int(line['Count Female']))
     left_over_values = (len(counts)-start) % day_length
     deltas = [counts[pos] - counts[pos-day_length] for pos in range(day_length+start, len(counts) - left_over_values)]
-
-    pylab.hist(deltas, normed=True)
+    deltas_fem = [counts_fem[pos] - counts_fem[pos-day_length] for pos in range(day_length+start, len(counts_fem) - left_over_values)]
+    pylab.hist(deltas, color='red')
+    #pylab.hist([deltas,deltas_fem], color=['red','green'], label=['Male', 'Female'], stacked=True)  #This is for stacked female/male
     pylab.title("Spaced by %s days" % (day_length,))
     #pylab.show() # We want to just output to file instead of showing
     pylab.savefig("%s_%s_days.png" %(data_file.split('.')[0], day_length,))  #strips .csv and uses that as name base
@@ -40,17 +43,17 @@ def choose_best_cycle(data_file):
         best_start_key = min(start_error.iteritems(), key=operator.itemgetter(1))[0]
         #print sorted(start_error.items(), key=lambda x: x[1])
         cycle_errors[(k,best_start_key)] = start_error[best_start_key]
-    print sorted(cycle_errors.items(), key=lambda x: x[1])
-    #print sorted(cycle_errors.items(), key=lambda x: x[1])[:5]
-    return sorted(cycle_errors.items(), key=lambda x: x[1])
-    #return sorted(cycle_errors.items(), key=lambda x: x[1])[:5]
+    #print sorted(cycle_errors.items(), key=lambda x: x[1])
+    print sorted(cycle_errors.items(), key=lambda x: x[1])[:5]
+    #return sorted(cycle_errors.items(), key=lambda x: x[1])
+    return sorted(cycle_errors.items(), key=lambda x: x[1])[:5]
     #print sorted(cycle_errors.items())
 
 
 def main():
     data_file = sys.argv[1]
-    best_10_cycles = choose_best_cycle(data_file)
-    for entry in best_10_cycles:
+    best_cycles = choose_best_cycle(data_file)
+    for entry in best_cycles:
         generate_delta_plot(data_file, day_length=int(entry[0][0]), start=int(entry[0][1]))
     
 if __name__ == '__main__':
