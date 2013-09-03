@@ -34,13 +34,13 @@ def output_form_single(region, counts, gender=None, age_key=None):
     elif age_key:
         name = "output_%s_%s.csv" %(region, age_key,)
     writer = csv.writer(open(name, 'wt'))
-    for i in range(0, int(math.ceil(len(counts))/2.0) + 1):
-        writer.writerow([counts[j] for j in range(i, len(counts) - i)]) # prints correct portion of data for auto regression
+    for i in range(0, len(counts)):
+        writer.writerow([counts[j] for j in range(0, len(counts) - i)])
 
                     
 
 def main():
-    regions = ('OregonEugeneSpringfield', 'WashingtonLongview', 'WashingtonWhatcom', )
+    regions = ('OregonEugeneSpringfield', 'WashingtonLongview', 'WashingtonWhatcom', 'test')
     output_form_regions(regions)
 
 if __name__ == '__main__':
