@@ -22,10 +22,10 @@ def output_form_regions(regions):
             counts_fem.append(int(line['Patient Count Female']))
         output_form_single(region, counts_fem, 'female')
         output_form_single(region, counts_male, 'male')
-        for age_key in counts_ages.keys():
-            if len(counts_ages[age_key]) == 0: # No need for extra files if the data is empty. Maybe threshold this to like 10?
-                continue
-            output_form_single(region, counts=counts_ages[age_key], age_key=age_key)
+        #for age_key in counts_ages.keys():
+        #    if len(counts_ages[age_key]) == 0: # No need for extra files if the data is empty. Maybe threshold this to like 10?
+        #        continue
+        #    output_form_single(region, counts=counts_ages[age_key], age_key=age_key)
 
 def output_form_single(region, counts, gender=None, age_key=None):
     """  """
@@ -34,8 +34,10 @@ def output_form_single(region, counts, gender=None, age_key=None):
     elif age_key:
         name = "output_%s_%s.csv" %(region, age_key,)
     writer = csv.writer(open(name, 'wt'))
-    for i in range(0, len(counts)):
-        writer.writerow([counts[j] for j in range(0, len(counts) - i)])
+    length = 0
+    while(length<len(counts)):
+        writer.writerow([counts[i] for i in range(length, -1, - 1)])
+        length += 1
 
                     
 
