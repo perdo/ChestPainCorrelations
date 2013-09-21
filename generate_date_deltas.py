@@ -10,8 +10,8 @@ def generate_delta_plot(data_file, day_length=1, start=0):
     counts_fem = []
     deltas = []
     for line in input_file:
-        counts.append(int(line['Count']))
-        counts_fem.append(int(line['Count Female']))
+        counts.append(int(line['Patient Count']))
+        counts_fem.append(int(line['Patient Count Female']))
     left_over_values = (len(counts)-start) % day_length
     deltas = [counts[pos] - counts[pos-day_length] for pos in range(day_length+start, len(counts) - left_over_values)]
     deltas_fem = [counts_fem[pos] - counts_fem[pos-day_length] for pos in range(day_length+start, len(counts_fem) - left_over_values)]
@@ -27,7 +27,7 @@ def choose_best_cycle(data_file):
     counts = []
     cycle_errors = {}
     for line in input_file:
-        counts.append(int(line['Count']))
+        counts.append(int(line['Patient Count']))
     #print counts
     for k in range(1, 31):
     #for k in range(1, 3):
