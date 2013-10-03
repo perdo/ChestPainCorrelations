@@ -12,7 +12,7 @@ def output_form_regions(regions):
         counts_fem = []
         counts_male = []
         counts_ages = defaultdict(list)
-        input_file = csv.DictReader(open("Data%s.csv" %(region,)))
+        input_file = csv.DictReader(open("./generated_csv/Data%s.csv" %(region,)))
 
         for line in input_file:
             for entry in line.keys():
@@ -22,17 +22,29 @@ def output_form_regions(regions):
             counts_fem.append(int(line['Patient Count Female']))
         output_form_single(region, counts_fem, 'female')
         output_form_single(region, counts_male, 'male')
+        
+        for day in ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'):
+            counts = []
+            input_file = csv.DictReader(open("./generated_csv/Data%s_%s.csv" %(region,day,)))
+            for line in input_file:
+                counts.append(line['Patient Count'])
+            output_form_single(region, counts, day)
+        for day in ('weekday', 'weekend'):
+            counts = []
+            input_file = csv.DictReader(open("./generated_csv/Data%s_%s.csv" %(region,day,)))
+            for line in input_file:
+                counts.append(line['Patient Count'])
+            output_form_single(region, counts, day)
+
         #for age_key in counts_ages.keys():
         #    if len(counts_ages[age_key]) == 0: # No need for extra files if the data is empty. Maybe threshold this to like 10?
         #        continue
-        #    output_form_single(region, counts=counts_ages[age_key], age_key=age_key)
+        #    output_form_single(region, counts=counts_ages[age_key], age_key)
 
-def output_form_single(region, counts, gender=None, age_key=None):
+def output_form_single(region, counts, output_type):
     """  """
-    if gender and gender in ('female', 'male',):
-        name = "output_%s_%s.csv" %(region, gender,)
-    elif age_key:
-        name = "output_%s_%s.csv" %(region, age_key,)
+    name = "./autoregression_output/output_%s_%s.csv" %(region, output_type,)
+
     writer = csv.writer(open(name, 'wt'))
     length = 0
     while(length<len(counts)):
