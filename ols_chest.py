@@ -55,9 +55,9 @@ def calc_relative_error(Y_test, y_predict):
     return error
 
 def main():
-    #regions = ('OregonEugeneSpringfield', 'WashingtonLongview', 'WashingtonWhatcom')
+    regions = ('OregonEugeneSpringfield', 'WashingtonLongview', 'WashingtonWhatcom')
     #regions = ('WashingtonLongview',)
-    regions = ('WashingtonWhatcom',)
+    #regions = ('WashingtonWhatcom',)
     #regions = ('OregonEugeneSpringfield',)
     for region in regions:
         ols_stuffs(region)

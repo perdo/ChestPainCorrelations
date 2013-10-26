@@ -36,10 +36,6 @@ def output_form_regions(regions):
                 counts.append(line['Patient Count'])
             output_form_single(region, counts, day)
 
-        #for age_key in counts_ages.keys():
-        #    if len(counts_ages[age_key]) == 0: # No need for extra files if the data is empty. Maybe threshold this to like 10?
-        #        continue
-        #    output_form_single(region, counts=counts_ages[age_key], age_key)
 
 def output_form_single(region, counts, output_type):
     """  """
