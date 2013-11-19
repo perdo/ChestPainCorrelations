@@ -14,37 +14,50 @@ def build_ols_model(regions):
         X_day = []
         error_list = []
         error_lists = []
+        mean_error_list = []
+        x_1 = []
+        x_2 = []
+        y_predict_list = []
+        y_actual = []
         input_file = csv.DictReader(open("generated_csv/Data%s.csv" %(region,)))
         for line in input_file:
             X.append(int(line['Patient Count']))
             X_day.append(line['Day'])
-        for cycle in (1, 7, 28): ## add back 1 and make sure this works same as with hardcoded months
-            error_list = ols_stuffs(region=region, cycle=cycle, X=X)
-            error_lists.append(error_list)
-            #plt.plot(error_list)
-        #plt.legend(['Update 1day', 'Update 7 days', 'Update 28 days'])
-        #plt.title("%s" % region)
-        #plt.show()
-        #plt.plot(error_list) # 28 days model
-        for day in ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'):
-            #error_lists.append(ols_stuffs(region=region, day=day, cycle=28, X=X, X_day=X_day))
-            ols_stuffs(region=region, day=day, cycle=28, X=X, X_day=X_day)
-        for days_of_data in (420, 630):
+        for cycle in (1, 7, 28): 
+            if cycle == 28: ## ugh.. don't make me read this
+                error_list, mean_error_list, x_1, x_2, y_predict_list, y_actual = ols_stuffs(region=region, cycle=cycle, X=X)
+                error_lists.append(error_list)
+                error_lists.append(mean_error_list)
+            else:
+                error_list = ols_stuffs(region=region, cycle=cycle, X=X)
+                error_lists.append(error_list)
+        #for day in ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'):
+        #    error_lists.append(ols_stuffs(region=region, day=day, cycle=28, X=X, X_day=X_day))
+        #    ols_stuffs(region=region, day=day, cycle=28, X=X, X_day=X_day)
+        for days_of_data in (210, 420):
             error_list = ols_stuffs(region=region, cycle=28, X=X, days_of_data=days_of_data)
             error_lists.append(error_list)
-            #plt.plot(error_list)
-        #plt.legend(['Full data', '420 sliding rule', '630 sliding rule'])
-        #plt.title("%s" % region)
-        #plt.show()
         write_errors_to_csv(region, error_lists)
+        write_confidence_to_csv(region, y_predict_list, y_actual, x_1, x_2)
+
+
+def write_confidence_to_csv(region, y_predict_list, y_actual, x_1, x_2):
+    output_file = open("ols_results/output_confidence_%s.csv" %(region,), 'w')
+    writer = csv.writer(output_file)
+    output_columns = ('y_predict', 'y_actual', 'x_1', 'x_2')
+    writer.writerow(output_columns)
+    for i in range(len(y_predict_list)):
+        interval = i / 28 ## Because every 28 days the interval changes
+        writer.writerow( (float(y_predict_list[i]), int(y_actual[i][0]), float(x_1[interval]), float(x_2[interval]),) )
+
 
 
 def write_errors_to_csv(region, error_lists):
     output_file = open("ols_results/output_comparison_%s.csv" %(region,), 'w')
     writer = csv.writer(output_file)
-    output_columns = ('1day', '7day', '28day', '420slide', '630slide',)
-    #output_columns = ('1day', '7day', '28day', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
-     #                   '420slide', '630slide',)
+    output_columns = ('1day', '7day', '28day', 'mean predictor', '210slide', '420slide',)
+    #output_columns = ('1day', '7day', '28day', 'mean_predictor', '28day x_1' , '28day x_2', 'Monday', 'Tuesday', 
+    #        'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday','210slide', '420slide',)
     writer.writerow(output_columns)
     for i in range(len(error_lists[2])):
         writer.writerow([error_lists[j][i] for j in range(len(error_lists))])
@@ -72,6 +85,9 @@ def ols_stuffs(region, day=None, cycle=28, X=None, X_day=None, days_of_data=None
     total_error = 0  ## keeps running tally of squared error up to but not including this month
     month = 1
     error_list = []
+    mean_error_list = []
+    interval_list_low = []
+    interval_list_high = []
     while ( ((month + 2 ) * cycle) <= len(X) ):
         if days_of_data is None or days_of_data > n:
             n = month * cycle
@@ -115,7 +131,7 @@ def ols_stuffs(region, day=None, cycle=28, X=None, X_day=None, days_of_data=None
             mean_ = 0
         mean_train = [1.0*sum(i)/cycle for i in X_train_list]
         
-        if len(y_predict_list_past) == 0: 
+        if len(y_predict_list_past) == 0: ## lame sauce
             MSE = 0
         elif day is None:
             MSE = calc_mse(total_error, len(y_predict_list_past)) # changed from n for monday predictor
@@ -142,21 +158,23 @@ def ols_stuffs(region, day=None, cycle=28, X=None, X_day=None, days_of_data=None
 
         x_1, x_2 = calc_confidence_intervals(mean_, sigma_, cycle, day)
 
-        if day is None:
+        if day is None: ## silly
             for i in range(0,cycle):
                 output_file.write( " %s <= ||pred:%s, mean_pred: %s, real: %s|| = < %s \n" \
                                 %(x_1[i], y_predict_current_month[i], mean_train[i], Y_test[i], x_2[i]) )
-                total += 1
-                if Y_test[i] <= x_2[i] and Y_test[i] >= x_1[i]:
-                    num_within += 1
+                if not (x_1[i] == 0 and x_2[i] == 0):
+                    total += 1
+                    if Y_test[i] <= x_2[i] and Y_test[i] >= x_1[i]:
+                        num_within += 1
         else:
             for i in range(0,cycle/7):
                 output_file.write( " %s <= ||pred:%s, real: %s|| = < %s \n" \
                                 %(x_1[i], y_predict_current_month[i], Y_test[i], x_2[i]) )
-                total += 1
-                if Y_test[i] <= x_2[i] and Y_test[i] >= x_1[i]:
-                    num_within += 1
-        if day is None:
+                if not (x_1[i] == 0 and x_2[i] == 0):
+                    total += 1
+                    if Y_test[i] <= x_2[i] and Y_test[i] >= x_1[i]:
+                        num_within += 1
+        if day is None:  ## total lameness
             working_error = 1.0 * calc_relative_error(Y_test, y_predict_current_month) / cycle
             mean_estimator_error = 1.0 * calc_relative_error(Y_test, mean_train) / cycle
         else:
@@ -173,12 +191,17 @@ def ols_stuffs(region, day=None, cycle=28, X=None, X_day=None, days_of_data=None
         Y_test_full_list += list(Y_test_list)
         month += 1
         error_list.append(float(working_error))
+        mean_error_list.append(float(mean_estimator_error))
+        interval_list_low.append( float(x_1[0]) )
+        interval_list_high.append( float(x_2[0]) )
     output_file.write("Percentage within range is: %s " %(1.0*num_within/total,))
     if cycle != 28:
         num_needed = 28/cycle
         error_list = [1.0*sum(error_list[i:i+num_needed])/num_needed for i in range(0, len(error_list), num_needed)]
-    return error_list
-##average error for 28 days based on 1/7 day rebuild?
+    if cycle != 28 or day is not None or days_of_data is not None:  # lame way to do this
+        return error_list
+    else:
+        return error_list, mean_error_list, interval_list_low, interval_list_high, y_predict_list_past, Y_test_full_list
 
 def calc_mse(total_error, n):
     return ( (1.0 * total_error) / n) 
