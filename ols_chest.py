@@ -80,6 +80,7 @@ class ols_models():
             for cycle in (1, 7, 28): 
                 if cycle == 28: ## ugh.. don't make me read this
                     x_1, x_2, y_predict_list, y_actual = self.build_new_model(region=region, cycle=cycle)
+                    self.write_confidence_to_csv(region, y_predict_list, y_actual, x_1, x_2)
                     self.error_comparison['mean predictor'] = self.mean_error_list
                     self.error_comparison_6mo['mean predictor'] = self.post_2yr_mean_error
                 else:
@@ -95,16 +96,20 @@ class ols_models():
 
             self.build_models_static(region, 730/28, 28)
             for days_of_data in (210, 420):
-                self.build_new_model(region=region, cycle=28, days_of_data=days_of_data)
+                x_1, x_2, y_predict_list, y_actual = self.build_new_model(region=region, cycle=28, days_of_data=days_of_data)
                 self.error_comparison[value_to_key[days_of_data]] = self.error_list
                 self.error_comparison_6mo[value_to_key[days_of_data]] = self.post_2yr_error
+                if days_of_data == 420:
+                    self.write_confidence_to_csv(region, y_predict_list, y_actual, x_1, x_2, days_of_data)
             self.write_errors_to_csv(region)
-            self.write_confidence_to_csv(region, y_predict_list, y_actual, x_1, x_2)
 
 
-    def write_confidence_to_csv(self,region, y_predict_list, y_actual, x_1, x_2):
+    def write_confidence_to_csv(self,region, y_predict_list, y_actual, x_1, x_2, days_of_data=None):
         """ Writes confidence interval information to CSV """
-        self.output_file = open("ols_results/output_confidence_%s.csv" %(region,), 'w')
+        if days_of_data is None:
+            self.output_file = open("ols_results/output_confidence_%s.csv" %(region,), 'w')
+        else:
+            self.output_file = open("ols_results/output_confidence_%s_%s.csv" %(region, days_of_data), 'w')
         writer = csv.writer(self.output_file)
         output_columns = ('y_predict', 'y_actual', 'x_1', 'x_2')
         writer.writerow(output_columns)
@@ -273,9 +278,13 @@ class ols_models():
 
             if len(y_predict_list_past) == 0: ## won't have MSE if we haven't predicted anything yet
                 MSE = 0
+            #else:
+            #    to_remove = 0
+            #    if days_of_data is not None:
+            #        to_remove = len(y_predict_list_past) - days_of_data
+            #    MSE = self.calc_mse(self.error_list[to_remove:], len(y_predict_list_past[to_remove:]))  # Calculates MSE of past estimates
             else:
-                MSE = self.calc_mse(total_error, len(y_predict_list_past))  # Calculates MSE of past estimates
-            #MSE2 = mean_squared_error(self.X_train, self.Y_train) 
+                MSE = mean_squared_error(self.X_train, self.Y_train)
             #if MSE != MSE2:
             #   import pdb; pdb.set_trace()
 
@@ -303,7 +312,7 @@ class ols_models():
             self.output_file.write("Testing on days: %s-%s by predicting days %s-%s\n" \
                                     %(month*cycle, (month+1)*cycle - 1, (month+1)*cycle, (month+2)*cycle - 1))
 
-            x_1, x_2 = self.calc_confidence_intervals(mean_, sigma_, cycle, day)  # get confidence interval
+            x_1, x_2 = self.calc_confidence_intervals(mean_, sigma_, cycle, day, y_predict_current_month)  # get confidence interval
             working_error = 1.0 * self.calc_relative_error(y_predict_current_month) / len(self.Y_test)
             mean_estimator_error = 1.0 * self.calc_relative_error(mean_train) / len(self.Y_test)
             
@@ -335,8 +344,8 @@ class ols_models():
         if cycle != 28:  # for cycle of 7 it takes average of predicting 28days so can be directly compared to 28day model
             num_needed = 28/cycle
             self.error_list = [1.0*sum(self.error_list[i:i+num_needed])/num_needed for i in range(0, len(self.error_list), num_needed)]
-        if cycle == 28 and day is None and days_of_data is None:
-            return interval_list_low, interval_list_high, y_predict_list_past, Y_test_full_list
+        #if cycle == 28 and day is None and days_of_data is None:
+        return interval_list_low, interval_list_high, y_predict_list_past, Y_test_full_list
 
     def print_errors(self, cycle, x_1, x_2, mean_train, y_predict_current_month, day):
         """ Prints information about predictions of models, their errors, and the confidence interval """
@@ -361,14 +370,12 @@ class ols_models():
         """ Calculates MSE of predictions """
         return ( (1.0 * total_error) / n) 
         
-    def calc_confidence_intervals(self,mean_, sigma_, cycle, day):
+    def calc_confidence_intervals(self,mean_, sigma_, cycle, day, y_predict_current_month):
+        if sigma_ == 0:
+            return [0] * len(y_predict_current_month), [0] * len(y_predict_current_month)
         """ Calculates confidence intervals for predictions """
-        if day is None:
-            x_1 = [ mean_ - (1.96 * sigma_) for i in range(0, cycle) ]
-            x_2 = [ mean_ + (1.96 * sigma_) for i in range(0, cycle) ]
-        else:
-            x_1 = [ mean_ - (1.96 * sigma_) for i in range(0, cycle/7) ]
-            x_2 = [ mean_ + (1.96 * sigma_) for i in range(0, cycle/7) ]
+        x_1 = [ y_predict_current_month[i] - (1.96 * sigma_) for i in range(0, len(y_predict_current_month)) ]
+        x_2 = [ y_predict_current_month[i] + (1.96 * sigma_) for i in range(0, len(y_predict_current_month)) ]
 
         return x_1, x_2
 
