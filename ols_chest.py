@@ -1,28 +1,20 @@
 import numpy as np
 import csv
-import sys
 import math
 from sklearn import linear_model
 from sklearn.metrics import mean_squared_error
-from statsmodels.sandbox.regression.predstd import wls_prediction_std
-import matplotlib.pyplot as plt
 
 
 class ols_models():
 
     def __init__(self, regions):
         self.regions = regions
+        self.X = []
+        self.X_day = []
+        self.error_list = []
 
-    def build_ols_model(self,regions):
-        """ builds all ols_models and outputs them to csvs """
-        for region in regions:
-            self.X = []
-            self.X_day = []
-            self.error_list = []
-            value_to_key = {1: '1day', 7:'7day', 28:'28day', 210: '210slide', 420:'420slide'}
-
-            self.error_comparison = \
-                {
+        self.error_comparison = \
+            {
                     '1day': [],
                     '7day': [],
                     '28day': [],
@@ -38,47 +30,53 @@ class ols_models():
                     #'Sunday': [],
 
             }
-            self.error_comparison_6mo = \
-            {
-                    '1day': [],
-                    '7day': [],
-                    '28day': [],
-                    'mean predictor': [],
-                    '210slide': [],
-                    '420slide': [],
-                    '104_Monday_slide': [],
-                    '52_Monday_slide': [],
-                    '104_Tuesday_slide': [],
-                    '52_Tuesday_slide': [],
-                    '104_Wednesday_slide': [],
-                    '52_Wednesday_slide': [],
-                    '104_Thursday_slide': [],
-                    '52_Thursday_slide': [],
-                    '104_Friday_slide': [],
-                    '52_Friday_slide': [],
-                    '104_Saturday_slide': [],
-                    '52_Saturday_slide': [],
-                    '104_Sunday_slide': [],
-                    '52_Sunday_slide': [],
-                    'Monday': [],
-                    'Tuesday': [],
-                    'Wednesday': [],
-                    'Thursday': [],
-                    'Friday': [],
-                    'Saturday': [],
-                    'Sunday': [],
+        self.error_comparison_6mo = \
+           {
+                '1day': [],
+                '7day': [],
+                '28day': [],
+                'mean predictor': [],
+                '210slide': [],
+                '420slide': [],
+                '104_Monday_slide': [],
+                '52_Monday_slide': [],
+                '104_Tuesday_slide': [],
+                '52_Tuesday_slide': [],
+                '104_Wednesday_slide': [],
+                '52_Wednesday_slide': [],
+                '104_Thursday_slide': [],
+                '52_Thursday_slide': [],
+                '104_Friday_slide': [],
+                '52_Friday_slide': [],
+                '104_Saturday_slide': [],
+                '52_Saturday_slide': [],
+                '104_Sunday_slide': [],
+                '52_Sunday_slide': [],
+                'Monday': [],
+                'Tuesday': [],
+                'Wednesday': [],
+                'Thursday': [],
+                'Friday': [],
+                'Saturday': [],
+                'Sunday': [],
             }
 
+    def build_ols_model(self,regions):
+        """ builds all ols_models and outputs them to csvs """
+        for region in regions:
+
+            value_to_key = {1: '1day', 7: '7day', 28: '28day', 210: '210slide', 420: '420slide'}
             x_1 = []
             x_2 = []
             y_predict_list = []
             y_actual = []
+
             input_file = csv.DictReader(open("generated_csv/Data%s.csv" %(region,)))
             for line in input_file:
                 self.X.append(int(line['Patient Count']))
                 self.X_day.append(line['Day'])
             for cycle in (1, 7, 28): 
-                if cycle == 28: ## ugh.. don't make me read this
+                if cycle == 28:  # ugh.. don't make me read this
                     x_1, x_2, y_predict_list, y_actual = self.build_new_model(region=region, cycle=cycle)
                     self.write_confidence_to_csv(region, y_predict_list, y_actual, x_1, x_2)
                     self.error_comparison['mean predictor'] = self.mean_error_list
@@ -89,7 +87,7 @@ class ols_models():
                 self.error_comparison_6mo[value_to_key[cycle]] = self.post_2yr_error
             for days_of_data in (104, 52):
                 for day in ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'):
-                    self.build_new_model(region=region, day=day, cycle=28, days_of_data=days_of_data) #dynamic 6mo model
+                    self.build_new_model(region=region, day=day, cycle=28, days_of_data=days_of_data) #  dynamic 6mo model
                     self.error_comparison_6mo["%s_" %(days_of_data,) + day + "_slide"] = self.post_2yr_error
                     #self.build_new_model(region=region, day=day, cycle=28) #dynamic 6mo model
                     #self.error_comparison[day] = self.error_list
@@ -103,19 +101,17 @@ class ols_models():
                     self.write_confidence_to_csv(region, y_predict_list, y_actual, x_1, x_2, days_of_data)
             self.write_errors_to_csv(region)
 
-
     def write_confidence_to_csv(self,region, y_predict_list, y_actual, x_1, x_2, days_of_data=None):
         """ Writes confidence interval information to CSV """
         if days_of_data is None:
-            self.output_file = open("ols_results/output_confidence_%s.csv" %(region,), 'w')
+            self.output_file = open("ols_results/output_confidence_%s.csv" % (region,), 'w')
         else:
-            self.output_file = open("ols_results/output_confidence_%s_%s.csv" %(region, days_of_data), 'w')
+            self.output_file = open("ols_results/output_confidence_%s_%s.csv" % (region, days_of_data), 'w')
         writer = csv.writer(self.output_file)
         output_columns = ('y_predict', 'y_actual', 'x_1', 'x_2')
         writer.writerow(output_columns)
         for i in range(len(y_predict_list)):
-            interval = i / 28 ## Because every 28 days the interval changes
-            writer.writerow((float(y_predict_list[i]), int(y_actual[i][0]), float(x_1[interval]), float(x_2[interval]),))
+            writer.writerow((float(y_predict_list[i]), int(y_actual[i][0]), float(x_1[i]), float(x_2[i]),))
 
     def write_errors_to_csv(self,region):
         """ Creates csv file that has all the errors of each model as the model is built """
@@ -124,7 +120,6 @@ class ols_models():
         writer = csv.writer(output_file)
         output_columns = sorted(self.error_comparison.keys())
         writer.writerow(output_columns)
-        last_element = False
         for i in range(len(self.error_comparison['28day'])):
             writer.writerow([self.error_comparison[key][i] for key in sorted(self.error_comparison.keys())])
 
@@ -132,7 +127,6 @@ class ols_models():
         output_columns_6mo = sorted(self.error_comparison_6mo.keys())
         writer_6mo.writerow(output_columns_6mo)
         writer_6mo.writerow([self.error_comparison_6mo[key] for key in sorted(self.error_comparison_6mo.keys())])
-
 
     def build_models_static(self, region, up_to_month, cycle):
 
@@ -146,7 +140,6 @@ class ols_models():
             'Sunday': linear_model.LinearRegression(),
 
         }
-        avg = 0
         for day in ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'):
             self.X_train_list = []
             self.Y_train_list = []
@@ -267,8 +260,8 @@ class ols_models():
             self.update_model(month, cycle, days_of_data, day) ## Updates model for current month
             y_predict_current_month = self.regr.predict(self.X_test)
             
-            if len(y_predict_list_past) >0: # calculate mean of predictions
-                mean_ = 1.0* sum(y_predict_list_past)/len(y_predict_list_past)
+            if len(y_predict_list_past) > 0: # calculate mean of predictions
+                mean_ = 1.0 * sum(y_predict_list_past)/len(y_predict_list_past)
             else:
                 mean_ = 0
 
@@ -284,10 +277,11 @@ class ols_models():
             #        to_remove = len(y_predict_list_past) - days_of_data
             #    MSE = self.calc_mse(self.error_list[to_remove:], len(y_predict_list_past[to_remove:]))  # Calculates MSE of past estimates
             else:
-                MSE = mean_squared_error(self.X_train, self.Y_train)
-            #if MSE != MSE2:
-            #   import pdb; pdb.set_trace()
-
+                if day:
+                    length = cycle/7
+                else:
+                    length = cycle
+                MSE = mean_squared_error(y_predict_list_past[-len(self.Y_train[length:]):], self.Y_train[length:])
             sigma_ = math.sqrt(MSE) # assumes unbiased estimator
 
 
@@ -307,10 +301,10 @@ class ols_models():
             self.output_file.write("MSE: %s\n" %(MSE,))
             self.output_file.write("dim y_predict_current_month: %s\n" %(y_predict_current_month.shape,))
             self.output_file.write("dim y_predict_list_past: %s\n" %(len(y_predict_list_past),))
-            self.output_file.write( "dim X: %s\n" %(self.X_train.shape,))
+            self.output_file.write("dim X: %s\n" %(self.X_train.shape,))
             self.output_file.write("dim Y: %s\n" %(self.Y_train.shape,))
             self.output_file.write("Testing on days: %s-%s by predicting days %s-%s\n" \
-                                    %(month*cycle, (month+1)*cycle - 1, (month+1)*cycle, (month+2)*cycle - 1))
+                                    % (month*cycle, (month+1)*cycle - 1, (month+1)*cycle, (month+2)*cycle - 1))
 
             x_1, x_2 = self.calc_confidence_intervals(mean_, sigma_, cycle, day, y_predict_current_month)  # get confidence interval
             working_error = 1.0 * self.calc_relative_error(y_predict_current_month) / len(self.Y_test)
@@ -328,8 +322,8 @@ class ols_models():
             month += 1
             self.error_list.append(float(working_error))
             self.mean_error_list.append(float(mean_estimator_error))
-            interval_list_low.append( float(x_1[0]) )
-            interval_list_high.append( float(x_2[0]) )
+            interval_list_low += x_1
+            interval_list_high += x_2
             if (month+2)*cycle >= 730:
                 self.post_2yr_error.append(float(working_error))
                 self.post_2yr_mean_error.append(float(mean_estimator_error))
@@ -344,7 +338,6 @@ class ols_models():
         if cycle != 28:  # for cycle of 7 it takes average of predicting 28days so can be directly compared to 28day model
             num_needed = 28/cycle
             self.error_list = [1.0*sum(self.error_list[i:i+num_needed])/num_needed for i in range(0, len(self.error_list), num_needed)]
-        #if cycle == 28 and day is None and days_of_data is None:
         return interval_list_low, interval_list_high, y_predict_list_past, Y_test_full_list
 
     def print_errors(self, cycle, x_1, x_2, mean_train, y_predict_current_month, day):
@@ -358,7 +351,7 @@ class ols_models():
                         if self.Y_test[i] <= x_2[i] and self.Y_test[i] >= x_1[i]:
                             self.num_within += 1
         else:
-            for i in range(0,len(y_predict_current_month)):
+            for i in range(0, len(y_predict_current_month)):
                 self.output_file.write( "   %s      %s <= ||pred:%s, real: %s|| = < %s \n" \
                                 %(day, x_1, y_predict_current_month[i], self.Y_test[i], x_2) )
                 if not (x_1 == 0 and x_2 == 0):

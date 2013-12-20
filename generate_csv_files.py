@@ -41,8 +41,8 @@ class CsvGenerator:
 
     def write_data(self):
         for region in self.regions:
-            self.write_weekday_weekend(region)
-            self.write_day(region)
+            #self.write_weekday_weekend(region)
+            #self.write_day(region)
             self.write_naive(region)
                                             
     def write_weekday_weekend(self, region):
@@ -89,7 +89,7 @@ class CsvGenerator:
 
 
     def write_naive(self, region):
-        dated = self.load_single_region_data(region, data)
+        dated = self.load_single_region_data(region)
         name = re.sub(r'[()/ ]', '', "Data%s.csv" %(region))
         name = 'generated_csv/' + name
         writer = csv.writer(open(name, 'wt'))
