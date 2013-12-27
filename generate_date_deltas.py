@@ -5,6 +5,7 @@ import pylab
 import operator
 
 def generate_delta_plot(data_file, day_length=1, start=0):
+    """ Generates plot of errors for each possible lag in time series """
     input_file = csv.DictReader(open(data_file))
     counts = []
     counts_fem = []
@@ -16,21 +17,18 @@ def generate_delta_plot(data_file, day_length=1, start=0):
     deltas = [counts[pos] - counts[pos-day_length] for pos in range(day_length+start, len(counts) - left_over_values)]
     deltas_fem = [counts_fem[pos] - counts_fem[pos-day_length] for pos in range(day_length+start, len(counts_fem) - left_over_values)]
     pylab.hist(deltas, color='red')
-    #pylab.hist([deltas,deltas_fem], color=['red','green'], label=['Male', 'Female'], stacked=True)  #This is for stacked female/male
     pylab.title("Spaced by %s days" % (day_length,))
-    #pylab.show() # We want to just output to file instead of showing
     pylab.savefig("%s_%s_days.png" %(data_file.split('.')[0], day_length,))  #strips .csv and uses that as name base
     pylab.clf()
 
 def choose_best_cycle(data_file):
+    """ Figures out best lag in time series """
     input_file = csv.DictReader(open(data_file))
     counts = []
     cycle_errors = {}
     for line in input_file:
         counts.append(int(line['Patient Count']))
-    #print counts
     for k in range(1, 31):
-    #for k in range(1, 3):
         start_error = {}
         error = 0
         for start in range(0, k): #issue, strips off anything that doesn't fit on left side but not right side maybe I made it other side issue? 
@@ -41,13 +39,9 @@ def choose_best_cycle(data_file):
             error = 1.0 * sum(error_terms) / len(error_terms)
             start_error[start] = error
         best_start_key = min(start_error.iteritems(), key=operator.itemgetter(1))[0]
-        #print sorted(start_error.items(), key=lambda x: x[1])
         cycle_errors[(k,best_start_key)] = start_error[best_start_key]
-    #print sorted(cycle_errors.items(), key=lambda x: x[1])
     print sorted(cycle_errors.items(), key=lambda x: x[1])[:5]
-    #return sorted(cycle_errors.items(), key=lambda x: x[1])
     return sorted(cycle_errors.items(), key=lambda x: x[1])[:5]
-    #print sorted(cycle_errors.items())
 
 
 def main():
