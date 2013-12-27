@@ -6,7 +6,7 @@ import sys
 import re
 
 class CsvGenerator:
-    """ lah """
+    """ Generates intermediate csv files from main data received from the health group. Data is private and therefore not under version control """
 
     def __init__(self, data_file, regions):
         self.data_file = data_file
@@ -41,8 +41,8 @@ class CsvGenerator:
 
     def write_data(self):
         for region in self.regions:
-            #self.write_weekday_weekend(region)
-            #self.write_day(region)
+            #self.write_weekday_weekend(region)  ## Idea for model that failed, no longer in use
+            #self.write_day(region)  ## Idea for model that failed, no longer in use
             self.write_naive(region)
                                             
     def write_weekday_weekend(self, region):
