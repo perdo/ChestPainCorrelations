@@ -6,7 +6,8 @@ from sklearn.metrics import mean_squared_error
 
 
 class ols_models():
-
+    """ Builds Various regression models for Chest Pain Data. Data Not included in version control as it is private """
+    
     def __init__(self, regions):
         self.regions = regions
         self.X = []

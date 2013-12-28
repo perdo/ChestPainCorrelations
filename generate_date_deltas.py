@@ -6,6 +6,7 @@ import operator
 
 def generate_delta_plot(data_file, day_length=1, start=0):
     """ Generates plot of errors for each possible lag in time series """
+    
     input_file = csv.DictReader(open(data_file))
     counts = []
     counts_fem = []
@@ -23,6 +24,7 @@ def generate_delta_plot(data_file, day_length=1, start=0):
 
 def choose_best_cycle(data_file):
     """ Figures out best lag in time series """
+    
     input_file = csv.DictReader(open(data_file))
     counts = []
     cycle_errors = {}
